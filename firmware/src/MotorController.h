@@ -1,17 +1,19 @@
-#pragma once
+#ifndef MOTORCONTROLLER_H
+#define MOTORCONTROLLER_H
 
-#include <Arduino.h>
-#include <Wire.h>
-
-#include "MCP23017.h"
 #include "RobotStepper.h"
 
-// Each motor controller can drive 4 steppers
-// Stepper 1 = A 0-3,
-// Stepper 2 = A 4-7
-// Stepper 3 = B 0-3,
-// Stepper 4 = B 4-7
+// CNC shield
+const uint8_t stepperEnablePin = 8;
 
+const int stepPinX = 2;
+const int dirPinX = 5;
+
+const int stepPinY = 3;
+const int dirPinY = 6;
+
+const int stepPinZ = 4;
+const int dirPinZ = 7;
 
 
 class MotorController 
@@ -20,23 +22,23 @@ public:
     MotorController();
     ~MotorController();
 
-    void setMCP(MCP23017 &mcp);
-    void begin();
+    boolean stepperEnabled() const;
+    void setStepperEnabled(boolean enabled);
 
-    RobotStepper *stepper1() const;
-    RobotStepper *stepper2() const;
+    RobotStepper *stepper1() const; // x
+    RobotStepper *stepper2() const; // y
+    RobotStepper *stepper3() const; // z
 
+    void init();
     void process();
 
 private:
-    MCP23017 *m_mcp = nullptr;
-
+    boolean m_stepperEnabled = true;
     RobotStepper *m_stepper1 = nullptr;
     RobotStepper *m_stepper2 = nullptr;
-    uint8_t m_valueA = 0x00;
-
     RobotStepper *m_stepper3 = nullptr;
-    RobotStepper *m_stepper4 = nullptr; 
-    uint8_t m_valueB = 0x00;
+
 
 };
+
+#endif // MOTORCONTROLLER_H

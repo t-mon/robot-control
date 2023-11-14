@@ -1,6 +1,6 @@
 #include "MotorController.h"
 
-MotorController::MotorController() 
+MotorController::MotorController()
 {
 
 }
@@ -10,28 +10,14 @@ MotorController::~MotorController()
 
 }
 
-void MotorController::setMCP(MCP23017 &mcp)
+boolean MotorController::stepperEnabled() const
 {
-    m_mcp = &mcp;
+    return m_stepperEnabled;
 }
 
-void MotorController::begin()
+void MotorController::setStepperEnabled(boolean enabled)
 {
-    // We can control 4 motors with one mcp.
-    Serial.println("Init MCP32017");
-    m_mcp->init();
-    m_mcp->portMode(MCP23017Port::A, 0); // Output
-    m_mcp->portMode(MCP23017Port::B, 0); // Output
-    m_mcp->writeRegister(MCP23017Register::GPIO_A, 0x00);  //Reset port A 
-    m_mcp->writeRegister(MCP23017Register::GPIO_B, 0x00);  //Reset port B
-
-    Serial.println("Creating stepper 1");
-    m_stepper1 = new RobotStepper(RobotStepper::HALF4WIRE, 0, 0, 0, 0, true);
-
-    Serial.println("Creating stepper 2");
-    m_stepper2 = new RobotStepper(RobotStepper::HALF4WIRE, 0, 0, 0, 0, true);
-
-    Serial.println("Controller initialized");
+    digitalWrite(stepperEnablePin, enabled ? LOW : HIGH);
 }
 
 RobotStepper *MotorController::stepper1() const
@@ -44,37 +30,48 @@ RobotStepper *MotorController::stepper2() const
     return m_stepper2;
 }
 
+RobotStepper *MotorController::stepper3() const
+{
+    return m_stepper3;
+}
+
+void MotorController::init()
+{        
+    // Enable stepper
+    pinMode(stepperEnablePin, OUTPUT);
+    setStepperEnabled(m_stepperEnabled);
+
+    m_stepper1 = new RobotStepper(stepPinX, dirPinX);
+    // m_stepper1->setMaxSpeed(2000);
+    // m_stepper1->setAcceleration(200);
+    // m_stepper1->setSpeed(500);
+	// m_stepper1->moveTo(200);
+
+    m_stepper2 = new RobotStepper(stepPinY, dirPinY);
+    // m_stepper2->setMaxSpeed(2000);
+    // m_stepper2->setAcceleration(300);
+    // m_stepper2->setSpeed(500);
+	// m_stepper2->moveTo(400);
+
+    m_stepper3 = new RobotStepper(stepPinZ, dirPinZ);
+}
+
 void MotorController::process()
 {
+    // Change direction once the motor reaches target position
+	if (m_stepper1->distanceToGo() == 0) 
+		m_stepper1->moveTo(-m_stepper1->currentPosition());
+    
+    // Change direction once the motor reaches target position
+	if (m_stepper2->distanceToGo() == 0) 
+		m_stepper2->moveTo(-m_stepper2->currentPosition());
+    
+    // Change direction once the motor reaches target position
+	if (m_stepper3->distanceToGo() == 0) 
+		m_stepper3->moveTo(-m_stepper3->currentPosition());
+    
 
-    uint8_t value1 = m_stepper1->process();
-    uint8_t value2 = m_stepper2->process();
-
-    uint8_t valueA = value1 | (value2 << 4);
-    if (valueA != m_valueA) {
-        m_valueA = valueA;
-        m_mcp->writePort(MCP23017Port::A, m_valueA);
-
-    //     Serial.print("Steppers: 0x");
-    //     Serial.print(value1, HEX);
-    //     Serial.print(" to go: ");
-    //     Serial.print(m_stepper1->distanceToGo());
-    //     Serial.print(" | 0x");
-    //     Serial.print(value1, HEX);
-    //     Serial.print(m_stepper2->distanceToGo());        
-    //     Serial.print(value2, HEX);
-    //     Serial.print(" to go: ");
-    //     Serial.print(m_stepper2->distanceToGo());
-    //     Serial.print("\n");
-
-    //     if (m_stepper1->distanceToGo() == 0) {
-    //         Serial.print("Stepper 1: Movement done.");
-    //         m_stepper1->disableOutputs();
-    //     }
-
-    //     if (m_stepper2->distanceToGo() == 0) {
-    //         Serial.print("Stepper 2: Movement done.");
-    //         m_stepper2->disableOutputs();
-    //     }
-    }
+    m_stepper1->run();
+    m_stepper2->run();
+    m_stepper3->run();
 }
