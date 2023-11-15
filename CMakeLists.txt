@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-include(robot.cmake)
+include(RobotControlInclude.cmake)
 
 project(robot-control
     VERSION 0.1.0
